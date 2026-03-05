@@ -302,6 +302,35 @@
     margin-bottom: 4px;
   }
 
+  .file-card-name-label {
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .file-card-name-input {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 4px 8px;
+    width: 100%;
+    margin-bottom: 4px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .file-card-name-input:focus {
+    border-color: var(--accent);
+  }
+
   .file-card-meta {
     font-size: 11px;
     color: var(--text-muted);
@@ -737,6 +766,7 @@
         processedBlob: null,
         svgContent: null,
 
+        customName: file.name.replace(/\.[^.]+$/, ''),
         processing: false,
         processed: false,
         colors: [],
@@ -963,7 +993,7 @@
   function downloadFile(entry) {
     const a = document.createElement('a');
     const ext = entry.type === 'svg' ? '.svg' : '.png';
-    const baseName = entry.name.replace(/\.[^.]+$/, '');
+    const baseName = entry.customName || entry.name.replace(/\.[^.]+$/, '');
 
     if (entry.processedBlob) {
       a.href = URL.createObjectURL(entry.processedBlob);
@@ -973,7 +1003,7 @@
       a.href = entry.originalUrl;
     }
 
-    a.download = baseName + '_cropped' + ext;
+    a.download = baseName + ext;
     a.click();
   }
 
@@ -996,8 +1026,8 @@
       canvas.toBlob(pngBlob => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(pngBlob);
-        const baseName = entry.name.replace(/\.[^.]+$/, '');
-        a.download = baseName + '_cropped.png';
+        const baseName = entry.customName || entry.name.replace(/\.[^.]+$/, '');
+        a.download = baseName + '.png';
         a.click();
       }, 'image/png');
     };
@@ -1141,7 +1171,8 @@
           ${entry.processing ? `<div class="processing-overlay"><div class="spinner"></div><div class="processing-text">processing...</div></div>` : ''}
         </div>
         <div class="file-card-info">
-          <div class="file-card-name" title="${entry.name}">${entry.name}</div>
+          <label class="file-card-name-label">filename</label>
+          <input class="file-card-name-input name-input" type="text" value="${entry.customName}" data-id="${entry.id}" spellcheck="false">
           <div class="file-card-meta">
             <span>${entry.processed ? '✓ processed' : 'pending'}</span>
           </div>
@@ -1183,6 +1214,13 @@
       btn.addEventListener('click', () => {
         const entry = files.find(f => f.id == btn.dataset.id);
         if (entry) openColorEditor(entry);
+      });
+    });
+
+    fileGrid.querySelectorAll('.name-input').forEach(input => {
+      input.addEventListener('input', e => {
+        const entry = files.find(f => f.id == input.dataset.id);
+        if (entry) entry.customName = e.target.value;
       });
     });
 
