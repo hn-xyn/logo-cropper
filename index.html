@@ -153,38 +153,6 @@
     font-family: 'Space Mono', monospace;
   }
 
-  .toggle {
-    width: 36px;
-    height: 20px;
-    background: var(--surface-3);
-    border-radius: 10px;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.2s ease;
-    border: 1px solid var(--border);
-  }
-
-  .toggle.active {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .toggle::after {
-    content: '';
-    width: 14px;
-    height: 14px;
-    background: white;
-    border-radius: 50%;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.2s ease;
-  }
-
-  .toggle.active::after {
-    transform: translateX(16px);
-  }
-
   .setting-group select {
     background: var(--surface-3);
     border: 1px solid var(--border);
@@ -662,10 +630,6 @@
 
   <div class="settings-bar">
     <div class="setting-group">
-      <label>auto-crop</label>
-      <div class="toggle active" id="toggleCrop" data-setting="crop"></div>
-    </div>
-    <div class="setting-group">
       <label>padding</label>
       <select id="paddingSelect">
         <option value="0">0px (edge-to-edge)</option>
@@ -727,7 +691,7 @@
 (function() {
   // State
   const files = [];
-  let settings = { crop: true, padding: 0 };
+  let settings = { padding: 0 };
 
   // Elements
   const dropZone = document.getElementById('dropZone');
@@ -744,14 +708,6 @@
   const paddingSelect = document.getElementById('paddingSelect');
   const canvas = document.getElementById('hiddenCanvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-  // Toggle settings
-  document.querySelectorAll('.toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      toggle.classList.toggle('active');
-      settings[toggle.dataset.setting] = toggle.classList.contains('active');
-    });
-  });
 
   paddingSelect.addEventListener('change', () => {
     settings.padding = parseInt(paddingSelect.value);
@@ -960,10 +916,7 @@
 
     try {
       if (entry.type === 'svg') {
-        let svgStr = entry.svgContent;
-        if (settings.crop) {
-          svgStr = await autoCropSVG(svgStr, settings.padding);
-        }
+        let svgStr = await autoCropSVG(entry.svgContent, settings.padding);
         entry.svgContent = svgStr;
         entry.processedUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
         const blob = new Blob([svgStr], { type: 'image/svg+xml' });
@@ -972,16 +925,9 @@
       } else {
         // PNG/JPG
         const img = await loadImage(entry.originalUrl);
-
-        if (settings.crop) {
-          const result = await autoCropPNG(img, settings.padding);
-          entry.processedUrl = result.url;
-          entry.processedBlob = result.blob;
-        } else {
-          entry.processedUrl = entry.originalUrl;
-        }
-
-
+        const result = await autoCropPNG(img, settings.padding);
+        entry.processedUrl = result.url;
+        entry.processedBlob = result.blob;
       }
       entry.processed = true;
     } catch (err) {
@@ -1027,8 +973,35 @@
       a.href = entry.originalUrl;
     }
 
-    a.download = baseName + '_processed' + ext;
+    a.download = baseName + '_cropped' + ext;
     a.click();
+  }
+
+  // Download SVG as PNG
+  function downloadAsPNG(entry) {
+    const svgStr = entry.svgContent;
+    if (!svgStr) return;
+    const img = new Image();
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const scale = 2;
+      const w = (img.naturalWidth || img.width || 300) * scale;
+      const h = (img.naturalHeight || img.height || 300) * scale;
+      canvas.width = w;
+      canvas.height = h;
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(pngBlob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(pngBlob);
+        const baseName = entry.name.replace(/\.[^.]+$/, '');
+        a.download = baseName + '_cropped.png';
+        a.click();
+      }, 'image/png');
+    };
+    img.src = url;
   }
 
   // Download all as individual files
@@ -1174,8 +1147,9 @@
           </div>
         </div>
         <div class="file-card-actions">
-          ${!entry.processed ? `<button class="btn btn-primary process-btn" data-id="${entry.id}">Process</button>` : `<button class="btn btn-secondary download-btn" data-id="${entry.id}">↓ Download</button>`}
-          ${hasSvg && entry.processed ? `<button class="btn btn-secondary color-btn" data-id="${entry.id}">🎨 Recolor</button>` : ''}
+          ${!entry.processed ? `<button class="btn btn-primary process-btn" data-id="${entry.id}">Process</button>` : `<button class="btn btn-secondary download-btn" data-id="${entry.id}">↓ ${hasSvg ? 'SVG' : 'PNG'}</button>`}
+          ${hasSvg && entry.processed ? `<button class="btn btn-secondary png-btn" data-id="${entry.id}">↓ PNG</button>` : ''}
+          ${hasSvg && entry.processed ? `<button class="btn btn-secondary color-btn" data-id="${entry.id}">🎨</button>` : ''}
           <button class="btn btn-danger remove-btn" data-id="${entry.id}" style="flex:0;padding:7px 10px;">✕</button>
         </div>
       `;
@@ -1195,6 +1169,13 @@
       btn.addEventListener('click', () => {
         const entry = files.find(f => f.id == btn.dataset.id);
         if (entry) downloadFile(entry);
+      });
+    });
+
+    fileGrid.querySelectorAll('.png-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = files.find(f => f.id == btn.dataset.id);
+        if (entry) downloadAsPNG(entry);
       });
     });
 
