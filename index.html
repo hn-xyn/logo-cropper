@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo Cropper</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141416;
+    --surface-2: #1c1c20;
+    --surface-3: #242429;
+    --border: #2a2a30;
+    --border-hover: #3a3a42;
+    --text: #e8e8ec;
+    --text-dim: #8888999;
+    --text-muted: #555560;
+    --accent: #2dd4bf;
+    --accent-dim: rgba(45, 212, 191, 0.12);
+    --accent-glow: rgba(45, 212, 191, 0.25);
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+  }
+
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  header p {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Drop Zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .drop-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, var(--accent-dim), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+
+  .drop-zone:hover::before, .drop-zone.dragover::before {
+    opacity: 1;
+  }
+
+  .drop-zone-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .drop-zone-icon svg { width: 22px; height: 22px; stroke: var(--accent); }
+
+  .drop-zone h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .drop-zone p {
+    color: var(--text-muted);
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .drop-zone input { display: none; }
+
+  /* Settings Bar */
+  .settings-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .setting-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .setting-group label {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--surface-3);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+    border: 1px solid var(--border);
+  }
+
+  .toggle.active {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .toggle::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s ease;
+  }
+
+  .toggle.active::after {
+    transform: translateX(16px);
+  }
+
+  .setting-group select {
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0b;
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface-3);
+    border-color: var(--border-hover);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+  }
+
+  .btn-danger:hover {
+    background: rgba(248, 113, 113, 0.08);
+  }
+
+  .btn svg { width: 14px; height: 14px; }
+
+  .spacer { flex: 1; }
+
+  /* File Grid */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .file-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .file-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+  }
+
+  .file-card-preview {
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+  }
+
+  .file-card-preview .checkerboard {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, var(--surface-3) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--surface-3) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--surface-3) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--surface-3) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    opacity: 0.4;
+  }
+
+  .file-card-preview img, .file-card-preview svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+  }
+
+  .file-card-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .badge-png { background: #7c3aed; color: white; }
+  .badge-svg { background: #059669; color: white; }
+
+
+  .file-card-info {
+    padding: 14px 16px;
+  }
+
+  .file-card-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .file-card-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    gap: 10px;
+  }
+
+  .file-card-actions {
+    display: flex;
+    gap: 6px;
+    padding: 0 16px 14px;
+  }
+
+  .file-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  /* Status indicators */
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 11, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--surface-3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .processing-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Color Editor Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    overflow: auto;
+    transform: translateY(8px);
+    transition: transform 0.2s ease;
+  }
+
+  .modal-overlay.active .modal {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .modal-close:hover { color: var(--text); background: var(--surface-3); }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .color-editor-preview {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .color-editor-preview .checkerboard {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    background-image:
+      linear-gradient(45deg, var(--surface-3) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--surface-3) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--surface-3) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--surface-3) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    opacity: 0.4;
+  }
+
+  .color-editor-preview img, .color-editor-preview svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+  }
+
+  .color-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .color-swatch input[type="color"] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .color-hex {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 70px;
+  }
+
+  .color-arrow {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .color-swatch-new {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .color-swatch-new input[type="color"] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .color-hex-new {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 70px;
+  }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* Batch actions bar */
+  .batch-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .batch-bar .count {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .batch-bar .count span {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: toastIn 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .toast.success { border-left: 3px solid var(--accent); }
+  .toast.error { border-left: 3px solid var(--danger); }
+
+  @keyframes toastIn {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .app { padding: 24px 16px 60px; }
+    .file-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .settings-bar { gap: 8px; }
+    .batch-bar { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1><span>◆</span> logo cropper</h1>
+    <p>auto-crop and recolor — batch process your logos into standardized, edge-to-edge files.</p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h3>drop logos here or click to browse</h3>
+    <p>PNG, SVG, JPG — drop as many as you want</p>
+    <input type="file" id="fileInput" multiple accept=".png,.svg,.jpg,.jpeg,.webp">
+  </div>
+
+  <div class="settings-bar">
+    <div class="setting-group">
+      <label>auto-crop</label>
+      <div class="toggle active" id="toggleCrop" data-setting="crop"></div>
+    </div>
+    <div class="setting-group">
+      <label>padding</label>
+      <select id="paddingSelect">
+        <option value="0">0px (edge-to-edge)</option>
+        <option value="4">4px</option>
+        <option value="8">8px</option>
+        <option value="16">16px</option>
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="processAllBtn" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      Process All
+    </button>
+  </div>
+
+  <div class="batch-bar" id="batchBar" style="display:none;">
+    <div class="count"><span id="fileCount">0</span> files loaded</div>
+    <div class="spacer"></div>
+    <button class="btn btn-secondary" id="downloadAllBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download All
+    </button>
+    <button class="btn btn-danger" id="clearAllBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      Clear
+    </button>
+  </div>
+
+  <div class="file-grid" id="fileGrid"></div>
+</div>
+
+<!-- Color Editor Modal -->
+<div class="modal-overlay" id="colorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Recolor SVG</h3>
+      <button class="modal-close" id="modalClose">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="color-editor-preview" id="colorPreview">
+        <div class="checkerboard"></div>
+      </div>
+      <div class="color-list" id="colorList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="colorCancel">Cancel</button>
+      <button class="btn btn-primary" id="colorApply">Apply Colors</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+<script>
+(function() {
+  // State
+  const files = [];
+  let settings = { crop: true, padding: 0 };
+
+  // Elements
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileGrid = document.getElementById('fileGrid');
+  const batchBar = document.getElementById('batchBar');
+  const fileCount = document.getElementById('fileCount');
+  const processAllBtn = document.getElementById('processAllBtn');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const colorModal = document.getElementById('colorModal');
+  const colorPreview = document.getElementById('colorPreview');
+  const colorList = document.getElementById('colorList');
+  const paddingSelect = document.getElementById('paddingSelect');
+  const canvas = document.getElementById('hiddenCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  // Toggle settings
+  document.querySelectorAll('.toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      settings[toggle.dataset.setting] = toggle.classList.contains('active');
+    });
+  });
+
+  paddingSelect.addEventListener('change', () => {
+    settings.padding = parseInt(paddingSelect.value);
+  });
+
+  // Drag & drop
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
+
+  function handleFiles(fileList) {
+    for (const file of fileList) {
+      if (!file.type.match(/image\/(png|svg|jpeg|jpg|webp)/) && !file.name.match(/\.(png|svg|jpg|jpeg|webp)$/i)) continue;
+      const entry = {
+        id: Date.now() + Math.random(),
+        file,
+        name: file.name,
+        type: file.name.toLowerCase().endsWith('.svg') ? 'svg' : 'png',
+        originalUrl: null,
+        processedUrl: null,
+        processedBlob: null,
+        svgContent: null,
+
+        processing: false,
+        processed: false,
+        colors: [],
+        colorMap: {}
+      };
+      files.push(entry);
+      loadFilePreview(entry);
+    }
+    updateUI();
+  }
+
+  function loadFilePreview(entry) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (entry.type === 'svg') {
+        entry.svgContent = e.target.result;
+        entry.originalUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(e.target.result);
+        entry.colors = extractSvgColors(e.target.result);
+      } else {
+        entry.originalUrl = e.target.result;
+      }
+      renderGrid();
+    };
+    if (entry.type === 'svg') reader.readAsText(entry.file);
+    else reader.readAsDataURL(entry.file);
+  }
+
+  function extractSvgColors(svgStr) {
+    const colors = new Set();
+    // Match fill and stroke colors
+    const patterns = [
+      /fill\s*[:=]\s*"?(#[0-9a-fA-F]{3,8})"?/gi,
+      /stroke\s*[:=]\s*"?(#[0-9a-fA-F]{3,8})"?/gi,
+      /fill\s*[:=]\s*"?(rgb[a]?\([^)]+\))"?/gi,
+      /stroke\s*[:=]\s*"?(rgb[a]?\([^)]+\))"?/gi,
+      /stop-color\s*[:=]\s*"?(#[0-9a-fA-F]{3,8})"?/gi,
+    ];
+    for (const p of patterns) {
+      let m;
+      while ((m = p.exec(svgStr)) !== null) {
+        const c = m[1].toLowerCase();
+        if (c !== '#fff' && c !== '#ffffff' && c !== '#000' && c !== '#000000' && c !== 'none' && c !== 'transparent') {
+          colors.add(c);
+        }
+      }
+    }
+    // Also add black and white if present
+    if (svgStr.includes('#000') || svgStr.includes('#000000') || svgStr.match(/fill\s*[:=]\s*"?black/i)) colors.add('#000000');
+    if (svgStr.includes('#fff') || svgStr.includes('#ffffff') || svgStr.match(/fill\s*[:=]\s*"?white/i)) colors.add('#ffffff');
+    return Array.from(colors);
+  }
+
+  function normalizeHex(c) {
+    if (c.length === 4) return '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+    return c;
+  }
+
+  // Auto-crop PNG
+  function autoCropPNG(img, padding) {
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    let top = canvas.height, bottom = 0, left = canvas.width, right = 0;
+
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const alpha = data[(y * canvas.width + x) * 4 + 3];
+        if (alpha > 10) {
+          if (y < top) top = y;
+          if (y > bottom) bottom = y;
+          if (x < left) left = x;
+          if (x > right) right = x;
+        }
+      }
+    }
+
+    if (top > bottom || left > right) return canvas.toDataURL('image/png');
+
+    const w = right - left + 1;
+    const h = bottom - top + 1;
+    const cropped = ctx.getImageData(left, top, w, h);
+
+    canvas.width = w + padding * 2;
+    canvas.height = h + padding * 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(cropped, padding, padding);
+
+    return new Promise(resolve => {
+      canvas.toBlob(blob => {
+        resolve({ url: URL.createObjectURL(blob), blob });
+      }, 'image/png');
+    });
+  }
+
+  // Auto-crop SVG
+  function autoCropSVG(svgStr, padding) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        const w = img.naturalWidth || img.width || 300;
+        const h = img.naturalHeight || img.height || 300;
+        canvas.width = w;
+        canvas.height = h;
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        let top = h, bottom = 0, left = w, right = 0;
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            if (data[i+3] > 10) {
+              if (y < top) top = y;
+              if (y > bottom) bottom = y;
+              if (x < left) left = x;
+              if (x > right) right = x;
+            }
+          }
+        }
+
+        if (top > bottom || left > right) {
+          resolve(svgStr);
+          return;
+        }
+
+        // Update viewBox
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+        const svgEl = doc.querySelector('svg');
+        if (svgEl) {
+          let vb = svgEl.getAttribute('viewBox');
+          let origW, origH, origX = 0, origY = 0;
+          if (vb) {
+            const parts = vb.split(/[\s,]+/).map(Number);
+            origX = parts[0]; origY = parts[1]; origW = parts[2]; origH = parts[3];
+          } else {
+            origW = parseFloat(svgEl.getAttribute('width')) || w;
+            origH = parseFloat(svgEl.getAttribute('height')) || h;
+          }
+
+          const scaleX = origW / w;
+          const scaleY = origH / h;
+          const newX = origX + left * scaleX - padding * scaleX;
+          const newY = origY + top * scaleY - padding * scaleY;
+          const newW = (right - left + 1) * scaleX + padding * 2 * scaleX;
+          const newH = (bottom - top + 1) * scaleY + padding * 2 * scaleY;
+
+          svgEl.setAttribute('viewBox', `${newX} ${newY} ${newW} ${newH}`);
+          svgEl.removeAttribute('width');
+          svgEl.removeAttribute('height');
+
+          const serializer = new XMLSerializer();
+          const result = serializer.serializeToString(doc);
+          resolve(result);
+        } else {
+          resolve(svgStr);
+        }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(svgStr); };
+      img.src = url;
+    });
+  }
+
+  // Process a single file
+  async function processFile(entry) {
+    entry.processing = true;
+    renderGrid();
+
+    try {
+      if (entry.type === 'svg') {
+        let svgStr = entry.svgContent;
+        if (settings.crop) {
+          svgStr = await autoCropSVG(svgStr, settings.padding);
+        }
+        entry.svgContent = svgStr;
+        entry.processedUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        entry.processedBlob = blob;
+        entry.colors = extractSvgColors(svgStr);
+      } else {
+        // PNG/JPG
+        const img = await loadImage(entry.originalUrl);
+
+        if (settings.crop) {
+          const result = await autoCropPNG(img, settings.padding);
+          entry.processedUrl = result.url;
+          entry.processedBlob = result.blob;
+        } else {
+          entry.processedUrl = entry.originalUrl;
+        }
+
+
+      }
+      entry.processed = true;
+    } catch (err) {
+      console.error('Processing error:', err);
+      toast('Error processing ' + entry.name, 'error');
+    }
+
+    entry.processing = false;
+    renderGrid();
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Process all
+  processAllBtn.addEventListener('click', async () => {
+    processAllBtn.disabled = true;
+    for (const entry of files) {
+      if (!entry.processed) await processFile(entry);
+    }
+    processAllBtn.disabled = false;
+    toast('All files processed!', 'success');
+  });
+
+  // Download single
+  function downloadFile(entry) {
+    const a = document.createElement('a');
+    const ext = entry.type === 'svg' ? '.svg' : '.png';
+    const baseName = entry.name.replace(/\.[^.]+$/, '');
+
+    if (entry.processedBlob) {
+      a.href = URL.createObjectURL(entry.processedBlob);
+    } else if (entry.processedUrl) {
+      a.href = entry.processedUrl;
+    } else {
+      a.href = entry.originalUrl;
+    }
+
+    a.download = baseName + '_processed' + ext;
+    a.click();
+  }
+
+  // Download all as individual files
+  downloadAllBtn.addEventListener('click', () => {
+    files.forEach(entry => {
+      if (entry.processed) downloadFile(entry);
+    });
+    toast('Downloading all processed files', 'success');
+  });
+
+  // Clear all
+  clearAllBtn.addEventListener('click', () => {
+    files.length = 0;
+    updateUI();
+    renderGrid();
+  });
+
+  // Open color editor
+  let currentColorEntry = null;
+  let colorMappings = {};
+
+  function openColorEditor(entry) {
+    const svgStr = entry.svgContent;
+    if (!svgStr) return;
+
+    currentColorEntry = entry;
+    colorMappings = {};
+
+    // Render preview
+    const existing = colorPreview.querySelector('img');
+    if (existing) existing.remove();
+    const prevExisting = colorPreview.querySelector('svg');
+    if (prevExisting) prevExisting.remove();
+
+    const previewImg = document.createElement('img');
+    previewImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    previewImg.id = 'colorPreviewImg';
+    colorPreview.appendChild(previewImg);
+
+    // Build color list
+    colorList.innerHTML = '';
+    const colors = entry.colors.length > 0 ? entry.colors : extractSvgColors(svgStr);
+
+    if (colors.length === 0) {
+      colorList.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:12px;">No editable colors found in this SVG.</p>';
+    }
+
+    colors.forEach(c => {
+      const normalized = normalizeHex(c);
+      colorMappings[c] = normalized;
+
+      const row = document.createElement('div');
+      row.className = 'color-row';
+      row.innerHTML = `
+        <div class="color-swatch" style="background:${normalized}">
+          <input type="color" value="${normalized}" disabled>
+        </div>
+        <span class="color-hex">${normalized}</span>
+        <span class="color-arrow">→</span>
+        <div class="color-swatch-new" style="background:${normalized}">
+          <input type="color" value="${normalized}" data-orig="${c}">
+        </div>
+        <span class="color-hex-new">${normalized}</span>
+      `;
+
+      const newPicker = row.querySelector('.color-swatch-new input');
+      const newSwatch = row.querySelector('.color-swatch-new');
+      const newHex = row.querySelector('.color-hex-new');
+
+      newPicker.addEventListener('input', e => {
+        const v = e.target.value;
+        newSwatch.style.background = v;
+        newHex.textContent = v;
+        colorMappings[c] = v;
+        updateColorPreview();
+      });
+
+      colorList.appendChild(row);
+    });
+
+    colorModal.classList.add('active');
+  }
+
+  function updateColorPreview() {
+    if (!currentColorEntry) return;
+    let svgStr = currentColorEntry.svgContent;
+    for (const [orig, newColor] of Object.entries(colorMappings)) {
+      const re = new RegExp(orig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      svgStr = svgStr.replace(re, newColor);
+    }
+    const previewImg = document.getElementById('colorPreviewImg');
+    if (previewImg) {
+      previewImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    }
+  }
+
+  document.getElementById('colorApply').addEventListener('click', () => {
+    if (!currentColorEntry) return;
+    let svgStr = currentColorEntry.svgContent;
+    for (const [orig, newColor] of Object.entries(colorMappings)) {
+      const re = new RegExp(orig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      svgStr = svgStr.replace(re, newColor);
+    }
+    currentColorEntry.svgContent = svgStr;
+    currentColorEntry.processedUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    currentColorEntry.processedBlob = new Blob([svgStr], { type: 'image/svg+xml' });
+    currentColorEntry.colors = extractSvgColors(svgStr);
+
+    colorModal.classList.remove('active');
+    currentColorEntry = null;
+    renderGrid();
+    toast('Colors applied!', 'success');
+  });
+
+  document.getElementById('colorCancel').addEventListener('click', () => { colorModal.classList.remove('active'); currentColorEntry = null; });
+  document.getElementById('modalClose').addEventListener('click', () => { colorModal.classList.remove('active'); currentColorEntry = null; });
+  colorModal.addEventListener('click', e => { if (e.target === colorModal) { colorModal.classList.remove('active'); currentColorEntry = null; } });
+
+  // Render
+  function renderGrid() {
+    fileGrid.innerHTML = '';
+    files.forEach(entry => {
+      const card = document.createElement('div');
+      card.className = 'file-card';
+
+      const displayUrl = entry.processedUrl || entry.originalUrl;
+      const badgeClass = entry.type === 'svg' ? 'badge-svg' : 'badge-png';
+      const badgeText = entry.type;
+
+      const hasSvg = entry.type === 'svg';
+
+      card.innerHTML = `
+        <div class="file-card-preview">
+          <div class="checkerboard"></div>
+          ${displayUrl ? `<img src="${displayUrl}" alt="${entry.name}">` : ''}
+          <span class="file-card-badge ${badgeClass}">${badgeText}</span>
+          ${entry.processing ? `<div class="processing-overlay"><div class="spinner"></div><div class="processing-text">processing...</div></div>` : ''}
+        </div>
+        <div class="file-card-info">
+          <div class="file-card-name" title="${entry.name}">${entry.name}</div>
+          <div class="file-card-meta">
+            <span>${entry.processed ? '✓ processed' : 'pending'}</span>
+          </div>
+        </div>
+        <div class="file-card-actions">
+          ${!entry.processed ? `<button class="btn btn-primary process-btn" data-id="${entry.id}">Process</button>` : `<button class="btn btn-secondary download-btn" data-id="${entry.id}">↓ Download</button>`}
+          ${hasSvg && entry.processed ? `<button class="btn btn-secondary color-btn" data-id="${entry.id}">🎨 Recolor</button>` : ''}
+          <button class="btn btn-danger remove-btn" data-id="${entry.id}" style="flex:0;padding:7px 10px;">✕</button>
+        </div>
+      `;
+
+      fileGrid.appendChild(card);
+    });
+
+    // Bind card buttons
+    fileGrid.querySelectorAll('.process-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = files.find(f => f.id == btn.dataset.id);
+        if (entry) processFile(entry);
+      });
+    });
+
+    fileGrid.querySelectorAll('.download-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = files.find(f => f.id == btn.dataset.id);
+        if (entry) downloadFile(entry);
+      });
+    });
+
+    fileGrid.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = files.find(f => f.id == btn.dataset.id);
+        if (entry) openColorEditor(entry);
+      });
+    });
+
+    fileGrid.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = files.findIndex(f => f.id == btn.dataset.id);
+        if (idx >= 0) files.splice(idx, 1);
+        updateUI();
+        renderGrid();
+      });
+    });
+  }
+
+  function updateUI() {
+    const count = files.length;
+    fileCount.textContent = count;
+    batchBar.style.display = count > 0 ? 'flex' : 'none';
+    processAllBtn.disabled = count === 0;
+  }
+
+  function toast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+})();
+</script>
+</body>
+</html>
